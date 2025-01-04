@@ -2,6 +2,8 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 import json
 from wifi_scanner import WiFiInvestigator
 import os
+import time
+import asyncio
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -146,25 +148,26 @@ class InvestigatorHandler(BaseHTTPRequestHandler):
             }, 404)
 
     def do_GET(self):
-        if self.path == '/scan':
-            try:
-                # Use class investigator instance for scanning
-                result = self.investigator.scan()
-                self.send_json_response(result)
-            except Exception as e:
-                print(f"Scan error: {str(e)}")
-                self.send_json_response({
-                    'success': False,
-                    'error': str(e)
-                }, 500)
-            return
-
         try:
+            # Handle scan request
+            if self.path == '/scan':
+                try:
+                    result = self.investigator.scan()
+                    self.send_json_response(result)
+                except Exception as e:
+                    print(f"Scan error: {str(e)}")
+                    self.send_json_response({
+                        'success': False,
+                        'error': str(e)
+                    }, 500)
+                return
+
+            # Handle file serving
             if self.path == '/' or self.path == '':
                 file_path = 'index.html'
             else:
                 file_path = self.path.lstrip('/')
-                
+            
             abs_path = os.path.join(BASE_DIR, file_path)
             print(f"Serving file: {abs_path}")
             
@@ -173,11 +176,13 @@ class InvestigatorHandler(BaseHTTPRequestHandler):
                 self._send_cors_headers()
                 self.end_headers()
                 return
-                
+            
+            # Read and serve file
             with open(abs_path, 'rb') as file:
                 content = file.read()
                 self.send_response(200)
                 
+                # Set content type
                 if file_path.endswith('.html'):
                     content_type = 'text/html'
                 elif file_path.endswith('.js'):
@@ -186,13 +191,13 @@ class InvestigatorHandler(BaseHTTPRequestHandler):
                     content_type = 'text/css'
                 else:
                     content_type = 'application/octet-stream'
-                    
+                
+                # Send headers and content
                 self.send_header('Content-Type', content_type)
                 self._send_cors_headers()
                 self.send_header('Content-Length', str(len(content)))
                 self.end_headers()
                 self.wfile.write(content)
-                
         except Exception as e:
             print(f"Error serving file: {str(e)}")
             self.send_response(404)
