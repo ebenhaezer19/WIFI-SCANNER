@@ -4,6 +4,8 @@
 ### WIFROG - v1.0.0
 
 ![image](https://github.com/user-attachments/assets/51779ff2-3bf5-486d-94cd-98a13e52e984)
+![image](https://github.com/user-attachments/assets/1c267455-fff3-4f71-8cde-713939af190f)
+
 
 
 **Description:**
