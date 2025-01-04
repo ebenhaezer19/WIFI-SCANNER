@@ -1,68 +1,177 @@
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import json
-from wifi_scanner import WiFiScanner
+from wifi_scanner import WiFiInvestigator
 import os
-import traceback
 
-# Get the directory containing the script
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-class WifiHandler(BaseHTTPRequestHandler):
-    def send_json_response(self, data, status=200):
-        try:
-            if not isinstance(data, dict):
-                data = {'success': False, 'error': 'Invalid response data'}
-            
-            response = json.dumps(data)
-            self.send_response(status)
-            self.send_header('Content-type', 'application/json')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.send_header('Content-Length', str(len(response.encode('utf-8'))))
-            self.end_headers()
-            self.wfile.write(response.encode('utf-8'))
-        except Exception as e:
-            print(f"Error sending JSON response: {str(e)}")
-            self.send_error(500, str(e))
+class InvestigatorHandler(BaseHTTPRequestHandler):
+    # Class-level shared investigator instance
+    investigator = WiFiInvestigator()
+    
+    @classmethod
+    def handle_progress(cls, progress):
+        """Handle progress updates from investigator"""
+        print(f"Progress: Testing '{progress['current_password']}' ({progress['attempt']}/{progress['max_attempts']})")
+    
+    def __init__(self, *args, **kwargs):
+        # Set progress callback when instance is created
+        self.__class__.investigator.set_progress_callback(self.__class__.handle_progress)
+        super().__init__(*args, **kwargs)
+    
+    protocol_version = 'HTTP/1.1'
+    
+    def _send_cors_headers(self):
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
 
-    def do_GET(self):
-        print(f"Received request for path: {self.path}")
-        
-        if self.path == '/scan' or self.path == '/scan/':
+    def send_json_response(self, data, status=200):
+        response = json.dumps(data).encode('utf-8')
+        self.send_response(status)
+        self.send_header('Content-Type', 'application/json')
+        self._send_cors_headers()
+        self.send_header('Content-Length', str(len(response)))
+        self.end_headers()
+        self.wfile.write(response)
+
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self._send_cors_headers()
+        self.end_headers()
+
+    def do_POST(self):
+        if self.path == '/crack' or self.path == '/simulate':
+            content_length = int(self.headers.get('Content-Length', 0))
+            if content_length == 0:
+                self.send_json_response({
+                    'success': False,
+                    'error': 'No data received'
+                }, 400)
+                return
+
             try:
-                scanner = WiFiScanner()
-                result = scanner.scan()
-                if isinstance(result, dict) and not result.get('success', False):
+                post_data = self.rfile.read(content_length)
+                data = json.loads(post_data.decode('utf-8'))
+                print(f"\nStarting new investigation:")
+                print(f"SSID: {data.get('ssid')}")
+                print(f"Pattern: {data.get('pattern', 'dlu')}")
+                print(f"Length: {data.get('min_length', 8)}-{data.get('max_length', 12)}")
+                print(f"Max attempts: {data.get('max_attempts', 1000)}")
+                print(f"Mode: {'Simulation' if self.path == '/simulate' else 'Real Attack'}\n")
+
+                if 'ssid' not in data:
                     self.send_json_response({
                         'success': False,
-                        'error': result.get('error', 'Unknown error')
-                    })
+                        'error': 'SSID is required'
+                    }, 400)
+                    return
+
+                # Use class investigator instance
+                result = self.investigator.crack_wifi(
+                    ssid=data['ssid'],
+                    pattern=data.get('pattern', 'dlu'),
+                    length_range=(
+                        int(data.get('min_length', 8)),
+                        int(data.get('max_length', 12))
+                    ),
+                    max_attempts=int(data.get('max_attempts', 1000)),
+                    simulation_mode=(self.path == '/simulate')
+                )
+                
+                if result.get('success'):
+                    print(f"\nSuccess! Password found: {result['password']}")
+                else:
+                    print(f"\nInvestigation failed: {result.get('error', 'Unknown error')}")
+                
+                self.send_json_response(result)
+                
+            except json.JSONDecodeError as e:
+                print(f"Error: Invalid JSON data - {str(e)}")
+                self.send_json_response({
+                    'success': False,
+                    'error': 'Invalid JSON data'
+                }, 400)
+            except Exception as e:
+                print(f"Error in investigation: {str(e)}")
+                self.send_json_response({
+                    'success': False,
+                    'error': str(e)
+                }, 500)
+        elif self.path == '/control':
+            try:
+                content_length = int(self.headers.get('Content-Length', 0))
+                post_data = self.rfile.read(content_length)
+                data = json.loads(post_data.decode('utf-8'))
+                
+                if 'action' not in data:
+                    self.send_json_response({
+                        'success': False,
+                        'error': 'Action is required'
+                    }, 400)
+                    return
+                
+                # Use class investigator instance for control
+                if data['action'] == 'pause':
+                    self.investigator.pause()
+                    print("Investigation paused")
+                    self.send_json_response({'success': True, 'status': 'paused'})
+                elif data['action'] == 'resume':
+                    self.investigator.resume()
+                    print("Investigation resumed")
+                    self.send_json_response({'success': True, 'status': 'resumed'})
+                elif data['action'] == 'stop':
+                    # Force stop the investigation
+                    self.investigator.stop()
+                    print("Investigation stopped")
+                    # Create new investigator instance to ensure clean state
+                    self.investigator = WiFiInvestigator()
+                    self.send_json_response({'success': True, 'status': 'stopped'})
                 else:
                     self.send_json_response({
-                        'success': True,
-                        'networks': result.get('networks', [])
-                    })
+                        'success': False,
+                        'error': 'Invalid action'
+                    }, 400)
+                
+            except Exception as e:
+                print(f"Error in control handler: {str(e)}")
+                self.send_json_response({
+                    'success': False,
+                    'error': str(e)
+                }, 500)
+        else:
+            self.send_json_response({
+                'success': False,
+                'error': 'Invalid endpoint'
+            }, 404)
+
+    def do_GET(self):
+        if self.path == '/scan':
+            try:
+                # Use class investigator instance for scanning
+                result = self.investigator.scan()
+                self.send_json_response(result)
             except Exception as e:
                 print(f"Scan error: {str(e)}")
                 self.send_json_response({
                     'success': False,
                     'error': str(e)
-                })
+                }, 500)
             return
-            
+
         try:
-            # Handle file paths
-            if self.path == '/':
+            if self.path == '/' or self.path == '':
                 file_path = 'index.html'
             else:
                 file_path = self.path.lstrip('/')
                 
-            # Construct absolute file path
             abs_path = os.path.join(BASE_DIR, file_path)
-            print(f"Trying to serve file: {abs_path}")  # Debug log
+            print(f"Serving file: {abs_path}")
             
             if not os.path.exists(abs_path):
-                print(f"File not found: {abs_path}")
-                self.send_error(404)
+                self.send_response(404)
+                self._send_cors_headers()
+                self.end_headers()
                 return
                 
             with open(abs_path, 'rb') as file:
@@ -70,27 +179,33 @@ class WifiHandler(BaseHTTPRequestHandler):
                 self.send_response(200)
                 
                 if file_path.endswith('.html'):
-                    self.send_header('Content-type', 'text/html')
+                    content_type = 'text/html'
                 elif file_path.endswith('.js'):
-                    self.send_header('Content-type', 'application/javascript')
+                    content_type = 'application/javascript'
                 elif file_path.endswith('.css'):
-                    self.send_header('Content-type', 'text/css')
+                    content_type = 'text/css'
+                else:
+                    content_type = 'application/octet-stream'
                     
+                self.send_header('Content-Type', content_type)
+                self._send_cors_headers()
                 self.send_header('Content-Length', str(len(content)))
                 self.end_headers()
                 self.wfile.write(content)
                 
         except Exception as e:
             print(f"Error serving file: {str(e)}")
-            self.send_error(404)
+            self.send_response(404)
+            self._send_cors_headers()
+            self.end_headers()
 
 def run(port=8000):
     try:
-        # Print current directory and files for debugging
+        print(f"Starting Law Enforcement WiFi Investigation Tool...")
         print(f"Current directory: {BASE_DIR}")
-        print("Available files:", os.listdir(BASE_DIR))
+        print(f"Available files: {os.listdir(BASE_DIR)}")
         
-        server = HTTPServer(('', port), WifiHandler)
+        server = HTTPServer(('localhost', port), InvestigatorHandler)
         print(f'Server running on http://localhost:{port}')
         server.serve_forever()
     except Exception as e:

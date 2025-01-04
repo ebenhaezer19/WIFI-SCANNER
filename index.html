@@ -1,14 +1,21 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>WiFi Scanner</title>
+    <title>Law Enforcement WiFi Investigation Tool</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            max-width: 800px;
+            max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
             background-color: #f5f5f5;
+        }
+        .header {
+            background-color: #1a237e;
+            color: white;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
         }
         .network {
             background-color: white;
@@ -23,32 +30,63 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
         .network.selected {
-            border-color: #007bff;
-            background-color: #e7f1ff;
+            border-color: #1a237e;
+            background-color: #e8eaf6;
         }
-        #password-form {
+        .control-panel {
             margin-top: 20px;
             padding: 20px;
             background-color: white;
             border-radius: 5px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
-        .error {
-            color: #dc3545;
+        .button-group {
+            display: flex;
+            gap: 10px;
             margin-top: 10px;
+        }
+        .danger-button {
+            background-color: #d32f2f;
+        }
+        .danger-button:hover {
+            background-color: #b71c1c;
+        }
+        .warning-button {
+            background-color: #ffa000;
+        }
+        .warning-button:hover {
+            background-color: #ff6f00;
+        }
+        .control-button {
+            background-color: #424242;
+        }
+        .control-button:hover {
+            background-color: #212121;
+        }
+        .results {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: white;
+            border-radius: 5px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .error {
+            color: #d32f2f;
+            background-color: #ffebee;
             padding: 10px;
-            background-color: #f8d7da;
             border-radius: 4px;
+            margin: 10px 0;
         }
         .success {
-            color: #28a745;
-            margin-top: 10px;
+            color: #388e3c;
+            background-color: #e8f5e9;
             padding: 10px;
-            background-color: #d4edda;
             border-radius: 4px;
+            margin: 10px 0;
         }
         button {
-            background-color: #007bff;
+            background-color: #1a237e;
             color: white;
             border: none;
             padding: 10px 20px;
@@ -57,48 +95,420 @@
             transition: background-color 0.3s ease;
         }
         button:hover {
-            background-color: #0056b3;
+            background-color: #283593;
         }
-        input {
+        button:disabled {
+            background-color: #9fa8da;
+            cursor: not-allowed;
+        }
+        input, select {
             padding: 8px;
             margin: 5px 0;
             border: 1px solid #ddd;
             border-radius: 4px;
             width: 200px;
         }
-        .loading {
-            display: none;
+        .progress-container {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #f5f5f5;
+            border-radius: 10px;
+            overflow: hidden;
             margin: 10px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background-color: #1a237e;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .attempt-list {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+        .attempt-item {
+            padding: 5px;
+            margin: 2px 0;
+            border-radius: 3px;
+            animation: fadeIn 0.3s ease;
+        }
+        .attempt-item.testing {
+            background-color: #e3f2fd;
+        }
+        .attempt-item.failed {
+            background-color: #ffebee;
+        }
+        .attempt-item.success {
+            background-color: #e8f5e9;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+        }
+        .stat-item {
+            text-align: center;
+            flex: 1;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 5px;
+            margin: 0 5px;
+        }
+        .bruteforce-visual {
+            font-family: monospace;
+            font-size: 32px;
+            text-align: center;
+            padding: 30px;
+            background-color: #000;
+            color: #0f0;
+            border-radius: 5px;
+            margin: 20px 0;
+            letter-spacing: 4px;
+            overflow: hidden;
+            white-space: nowrap;
+            height: 100px;
+            line-height: 100px;
+        }
+        .char-container {
+            display: inline-block;
+            width: 30px;
+            height: 40px;
+            margin: 0 4px;
+            position: relative;
+            overflow: hidden;
+        }
+        .char {
+            position: absolute;
+            animation: scrollChars 0.1s linear infinite;
+        }
+        @keyframes scrollChars {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-100%); }
+        }
+        .success-char {
+            color: #00ff00;
+            text-shadow: 0 0 5px #00ff00;
+            animation: none;
+        }
+        .testing-char {
+            color: #ffff00;
+            text-shadow: 0 0 5px #ffff00;
+        }
+        .failed-char {
+            color: #ff0000;
+            text-shadow: 0 0 5px #ff0000;
+        }
+        .terminal {
+            background-color: #000;
+            color: #0f0;
+            font-family: monospace;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            height: 200px;
+            overflow-y: auto;
+            position: relative;
+        }
+        .terminal-input {
+            background-color: transparent;
+            border: none;
+            color: #0f0;
+            font-family: monospace;
+            width: 100%;
+            padding: 5px;
+            outline: none;
+        }
+        .terminal-output {
+            margin-bottom: 10px;
+            white-space: pre-wrap;
+        }
+        .terminal-prompt {
+            color: #0f0;
+            margin-right: 5px;
+        }
+        .attempt-line {
+            font-family: monospace;
+            font-size: 14px;
+            color: #0f0;
+            margin: 2px 0;
+            white-space: pre;
+        }
+        .scrolling-char {
+            display: inline-block;
+            animation: charScroll 0.5s ease-in-out;
+            margin-right: 2px;
+        }
+        @keyframes charScroll {
+            0% { 
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            50% {
+                color: #ff0;
+            }
+            100% { 
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        .terminal {
+            background-color: #000;
+            color: #0f0;
+            font-family: monospace;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            height: 300px;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 0 10px rgba(0,255,0,0.2);
+        }
+        .terminal-output {
+            margin-bottom: 5px;
         }
     </style>
 </head>
 <body>
-    <h1>WiFi Scanner</h1>
-    <button onclick="scanNetworks()" id="scanBtn">Scan Networks</button>
-    <div id="loading" class="loading">Scanning...</div>
-    <div id="networks"></div>
-    <div id="password-form" style="display:none;">
-        <h3>Try Password</h3>
-        <input type="text" id="ssid" readonly>
-        <input type="password" id="password" placeholder="Enter password">
-        <button onclick="tryPassword()">Connect</button>
+    <div class="header">
+        <h1>Law Enforcement WiFi Investigation Tool</h1>
+        <p>Authorized Personnel Only</p>
     </div>
-    <div id="result"></div>
+
+    <button onclick="scanNetworks()" id="scanBtn">Scan Networks</button>
+    <div id="networks"></div>
+
+    <div class="control-panel" id="controlPanel" style="display:none;">
+        <h3>Investigation Parameters</h3>
+        <input type="text" id="ssid" readonly>
+        <select id="pattern">
+            <option value="d">Numbers Only</option>
+            <option value="dl">Numbers + Lowercase</option>
+            <option value="dlu" selected>Numbers + Letters</option>
+            <option value="dlus">All Characters</option>
+        </select>
+        <input type="number" id="minLength" value="8" min="4" max="12" placeholder="Min Length">
+        <input type="number" id="maxLength" value="12" min="4" max="12" placeholder="Max Length">
+        <input type="number" id="maxAttempts" value="1000" min="100" max="10000" placeholder="Max Attempts">
+        <div class="button-group">
+            <button onclick="startInvestigation(true)" id="simulateBtn">Simulate Investigation</button>
+            <button onclick="startInvestigation(false)" id="crackBtn" class="danger-button">Real Attack (Dangerous)</button>
+        </div>
+    </div>
+
+    <div class="progress-container" id="progressContainer" style="display:none;">
+        <h3>Investigation Progress</h3>
+        <div class="bruteforce-visual" id="bruteforceVisual"></div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressBar"></div>
+        </div>
+        <div class="terminal" id="terminal">
+            <div id="terminalOutput"></div>
+            <div style="display: flex;">
+                <span class="terminal-prompt">$</span>
+                <input type="text" class="terminal-input" id="terminalInput" placeholder="Type command (help for list of commands)" onkeypress="handleTerminalInput(event)">
+            </div>
+        </div>
+        <div class="attempt-list" id="attemptList"></div>
+    </div>
+
+    <div class="results" id="results" style="display:none;">
+        <h3>Investigation Results</h3>
+        <div id="progress"></div>
+        <div id="attempts"></div>
+    </div>
 
     <script>
         let selectedNetwork = null;
+        let startTime = null;
+        let attemptCounter = 0;
+        let investigationActive = false;
+
+        function addTerminalOutput(text, isCommand = false) {
+            const output = document.getElementById('terminalOutput');
+            const line = document.createElement('div');
+            line.className = 'terminal-output';
+            
+            if (isCommand) {
+                line.innerHTML = `<span class="terminal-prompt">$</span> ${text}`;
+            } else if (text.startsWith('[ATTEMPT]')) {
+                // Special handling for attempt lines to show brute force progress
+                const attemptLine = document.createElement('div');
+                attemptLine.className = 'attempt-line';
+                
+                // Extract password from attempt text
+                const parts = text.substring(9).split(' ');
+                const password = parts[1];
+                
+                // Create visual representation of brute force
+                const chars = password.split('');
+                const charContainer = document.createElement('div');
+                charContainer.style.display = 'inline-block';
+                
+                // Show current attempt
+                charContainer.innerHTML = `<span style="color: #0f0">Testing: </span>`;
+                chars.forEach((char, index) => {
+                    const span = document.createElement('span');
+                    span.className = 'scrolling-char';
+                    span.textContent = char;
+                    span.style.animationDelay = `${index * 50}ms`;
+                    charContainer.appendChild(span);
+                });
+                
+                // Add attempt counter and speed
+                const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                const speed = elapsed > 0 ? Math.floor(attemptCounter / elapsed) : 0;
+                const counter = document.createElement('span');
+                counter.style.marginLeft = '10px';
+                counter.style.color = '#666';
+                counter.textContent = `[${attemptCounter}/${maxAttempts} | ${speed}/s]`;
+                charContainer.appendChild(counter);
+                
+                attemptLine.appendChild(charContainer);
+                line.appendChild(attemptLine);
+            } else if (text.startsWith("Testing '")) {
+                // Handle direct testing output
+                const attemptLine = document.createElement('div');
+                attemptLine.className = 'attempt-line';
+                
+                // Extract password and progress from text
+                const match = text.match(/Testing '(.+)' \((\d+)\/(\d+)\)/);
+                if (match) {
+                    const [_, password, current, total] = match;
+                    attemptCounter = parseInt(current);
+                    maxAttempts = parseInt(total);
+                    
+                    const charContainer = document.createElement('div');
+                    charContainer.style.display = 'inline-block';
+                    
+                    // Show current attempt
+                    charContainer.innerHTML = `<span style="color: #0f0">Testing: </span>`;
+                    password.split('').forEach((char, index) => {
+                        const span = document.createElement('span');
+                        span.className = 'scrolling-char';
+                        span.textContent = char;
+                        span.style.animationDelay = `${index * 50}ms`;
+                        charContainer.appendChild(span);
+                    });
+                    
+                    // Add attempt counter and speed
+                    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                    const speed = elapsed > 0 ? Math.floor(attemptCounter / elapsed) : 0;
+                    const counter = document.createElement('span');
+                    counter.style.marginLeft = '10px';
+                    counter.style.color = '#666';
+                    counter.textContent = `[${current}/${total} | ${speed}/s]`;
+                    charContainer.appendChild(counter);
+                    
+                    attemptLine.appendChild(charContainer);
+                    line.appendChild(attemptLine);
+                } else {
+                    line.textContent = text;
+                }
+            } else {
+                line.textContent = text;
+            }
+            
+            output.appendChild(line);
+            output.scrollTop = output.scrollHeight;
+            
+            // Keep only last 100 lines to prevent memory issues
+            while (output.children.length > 100) {
+                output.removeChild(output.firstChild);
+            }
+        }
+
+        function handleTerminalInput(event) {
+            if (event.key === 'Enter') {
+                const input = document.getElementById('terminalInput');
+                const command = input.value.trim().toLowerCase();
+                input.value = '';
+                
+                addTerminalOutput(command, true);
+                
+                switch (command) {
+                    case 'help':
+                        addTerminalOutput(
+                            'Developer by Krisopras Eben Haeezer\n' +
+                            'Available commands:\n' +
+                            'help     - Show this help message\n' +
+                            'status   - Show current investigation status\n' +
+                            'rules    - Show security rules and guidelines\n' +
+                            'clear    - Clear terminal output'
+                        );
+                        break;
+                    case 'status':
+                        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                        const minutes = Math.floor(elapsed / 60);
+                        const seconds = elapsed % 60;
+                        const speed = elapsed > 0 ? Math.floor(attemptCounter / elapsed) : 0;
+                        
+                        addTerminalOutput(
+                            'Investigation Status:\n' +
+                            `Attempts: ${attemptCounter}\n` +
+                            `Speed: ${speed}/s\n` +
+                            `Time: ${minutes}:${seconds.toString().padStart(2, '0')}`
+                        );
+                        break;
+                    case 'rules':
+                        addTerminalOutput(
+                            'Security Rules and Guidelines:\n\n' +
+                            '1. Authorization Required\n' +
+                            '   - This tool is for authorized law enforcement personnel only\n' +
+                            '   - Unauthorized use is strictly prohibited\n\n' +
+                            '2. Investigation Guidelines\n' +
+                            '   - Use simulation mode for testing and training\n' +
+                            '   - Real attack mode requires proper authorization\n' +
+                            '   - Document all investigation activities\n\n' +
+                            '3. Network Safety\n' +
+                            '   - Verify target network before investigation\n' +
+                            '   - Avoid interference with critical networks\n' +
+                            '   - Monitor network stability during investigation\n\n' +
+                            '4. Data Protection\n' +
+                            '   - Handle discovered credentials with care\n' +
+                            '   - Do not share or store passwords insecurely\n' +
+                            '   - Clear all data after investigation\n\n' +
+                            '5. Legal Compliance\n' +
+                            '   - Follow local and federal regulations\n' +
+                            '   - Maintain proper investigation records\n' +
+                            '   - Report any security incidents immediately'
+                        );
+                        break;
+                    case 'clear':
+                        document.getElementById('terminalOutput').innerHTML = '';
+                        break;
+                    default:
+                        addTerminalOutput(`Unknown command: ${command}\nType 'help' for available commands`);
+                }
+            }
+        }
 
         async function scanNetworks() {
             try {
                 document.getElementById('scanBtn').disabled = true;
-                document.getElementById('loading').style.display = 'block';
                 document.getElementById('networks').innerHTML = '';
-                document.getElementById('result').innerHTML = '';
+                document.getElementById('results').style.display = 'none';
+                document.getElementById('progressContainer').style.display = 'none';
+                
+                addTerminalOutput('Scanning for networks...');
                 
                 const response = await fetch('/scan');
-                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
                 
-                document.getElementById('loading').style.display = 'none';
+                const data = await response.json();
                 document.getElementById('scanBtn').disabled = false;
                 
                 if (!data.success) {
@@ -107,31 +517,33 @@
                 
                 if (!data.networks || data.networks.length === 0) {
                     document.getElementById('networks').innerHTML = '<div>No networks found</div>';
+                    addTerminalOutput('No networks found');
                     return;
                 }
+                
+                addTerminalOutput(`Found ${data.networks.length} networks`);
                 
                 document.getElementById('networks').innerHTML = data.networks.map(network => `
                     <div class="network" onclick="selectNetwork('${network.ssid}')">
                         <strong>${network.ssid}</strong><br>
-                        Signal Strength: ${network.strength}%<br>
+                        BSSID: ${network.bssid}<br>
+                        Signal Strength: ${network.signal}%<br>
                         Security: ${network.security}
                     </div>
                 `).join('');
             } catch (error) {
-                document.getElementById('loading').style.display = 'none';
                 document.getElementById('scanBtn').disabled = false;
-                document.getElementById('result').innerHTML = `
-                    <div class="error">Error: ${error.message}</div>
-                `;
-                console.error('Error:', error);
+                showError(error.message);
+                addTerminalOutput(`Error: ${error.message}`);
             }
         }
 
         function selectNetwork(ssid) {
             selectedNetwork = ssid;
             document.getElementById('ssid').value = ssid;
-            document.getElementById('password-form').style.display = 'block';
-            document.getElementById('result').innerHTML = '';
+            document.getElementById('controlPanel').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('progressContainer').style.display = 'none';
             
             document.querySelectorAll('.network').forEach(el => {
                 if (el.querySelector('strong').textContent === ssid) {
@@ -140,47 +552,276 @@
                     el.classList.remove('selected');
                 }
             });
+            
+            addTerminalOutput(`Selected network: ${ssid}`);
         }
 
-        async function tryPassword() {
-            const password = document.getElementById('password').value;
-            const resultDiv = document.getElementById('result');
-            
+        async function startInvestigation(simulationMode = true) {
             try {
-                resultDiv.innerHTML = '<div class="loading">Connecting...</div>';
+                // Clean up any previous investigation
+                if (investigationActive) {
+                    await sendControl('stop');
+                }
+
+                // Reset state
+                investigationActive = true;
+                attemptCounter = 0;
+                startTime = Date.now();
                 
-                const response = await fetch('/try_password', {
+                // Validate parameters first
+                const minLength = parseInt(document.getElementById('minLength').value);
+                const maxLength = parseInt(document.getElementById('maxLength').value);
+                const maxAttempts = parseInt(document.getElementById('maxAttempts').value);
+                
+                // Parameter validation
+                if (minLength > maxLength) {
+                    throw new Error('Minimum length cannot be greater than maximum length');
+                }
+                if (minLength < 4 || maxLength > 12) {
+                    throw new Error('Length must be between 4 and 12 characters');
+                }
+                if (maxAttempts < 100 || maxAttempts > 10000) {
+                    throw new Error('Max attempts must be between 100 and 10000');
+                }
+                if (!selectedNetwork) {
+                    throw new Error('Please select a network first');
+                }
+
+                const startBtn = simulationMode ? 
+                    document.getElementById('simulateBtn') : 
+                    document.getElementById('crackBtn');
+                startBtn.disabled = true;
+                
+                // Reset display with new parameters
+                document.getElementById('progressBar').style.width = '0%';
+                document.getElementById('attemptList').innerHTML = '';
+                document.getElementById('progressContainer').style.display = 'block';
+                document.getElementById('results').style.display = 'none';
+                document.getElementById('terminalOutput').innerHTML = '';
+                
+                // Initialize bruteforce visual with current parameters
+                createBruteforceVisual();
+                
+                const params = {
+                    ssid: selectedNetwork,
+                    pattern: document.getElementById('pattern').value,
+                    min_length: minLength,
+                    max_length: maxLength,
+                    max_attempts: maxAttempts
+                };
+
+                // Log parameters to terminal
+                addTerminalOutput(`Starting ${simulationMode ? 'simulation' : 'real attack'} with parameters:`)
+                addTerminalOutput(JSON.stringify(params, null, 2));
+
+                const endpoint = simulationMode ? '/simulate' : '/crack';
+                const response = await fetch(endpoint, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({
-                        ssid: selectedNetwork,
-                        password: password
-                    })
+                    body: JSON.stringify(params)
                 });
-                
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
                 const result = await response.json();
+
+                // Update visual based on max_length parameter
+                if (result.attempt_list) {
+                    result.attempt_list.forEach(attempt => {
+                        addAttempt(attempt.password, attempt.status);
+                        attemptCounter = attempt.attempt;
+                        const progress = (attemptCounter / params.max_attempts) * 100;
+                        document.getElementById('progressBar').style.width = `${Math.min(100, progress)}%`;
+                    });
+                }
                 
                 if (result.success) {
-                    resultDiv.innerHTML = `
-                        <div class="success">Connected successfully to ${selectedNetwork}!</div>
+                    document.getElementById('progress').innerHTML = `
+                        <div class="success">
+                            Investigation successful!<br>
+                            Password found: ${result.password}<br>
+                            Attempts: ${result.attempts}<br>
+                            Time elapsed: ${Math.floor((Date.now() - startTime) / 1000)}s
+                        </div>
                     `;
+                    updateBruteforceVisual(result.password, 'success');
+                    addTerminalOutput(`Success! Password found: ${result.password}`);
                 } else {
-                    resultDiv.innerHTML = `
-                        <div class="error">Failed to connect: ${result.message || 'Wrong password'}</div>
+                    document.getElementById('progress').innerHTML = `
+                        <div class="error">
+                            Investigation completed without results.<br>
+                            Attempts made: ${result.attempts}<br>
+                            Time elapsed: ${Math.floor((Date.now() - startTime) / 1000)}s<br>
+                            ${result.error ? `Error: ${result.error}` : ''}
+                        </div>
                     `;
+                    addTerminalOutput(`Investigation failed: ${result.error || 'Password not found'}`);
                 }
+
+                document.getElementById('results').style.display = 'block';
+
             } catch (error) {
-                resultDiv.innerHTML = `
-                    <div class="error">Error: ${error.message}</div>
-                `;
-                console.error('Error:', error);
+                showError(error.message);
+                addTerminalOutput(`Error: ${error.message}`);
+            } finally {
+                if (!investigationActive) {
+                    document.getElementById('simulateBtn').disabled = false;
+                    document.getElementById('crackBtn').disabled = false;
+                }
             }
         }
 
-        // Initial scan
-        scanNetworks();
+        function showError(message) {
+            const results = document.getElementById('results');
+            results.style.display = 'block';
+            results.innerHTML = `<div class="error">${message}</div>`;
+        }
+
+        function createBruteforceVisual() {
+            const visualContainer = document.getElementById('bruteforceVisual');
+            visualContainer.innerHTML = '';
+            const maxLength = parseInt(document.getElementById('maxLength').value);
+            const minLength = parseInt(document.getElementById('minLength').value);
+            
+            // Create visual representation based on max length
+            for (let i = 0; i < maxLength; i++) {
+                const charContainer = document.createElement('div');
+                charContainer.className = 'char-container';
+                // Show different placeholder for required vs optional characters
+                const char = i < minLength ? '*' : '?';
+                charContainer.innerHTML = `<span class="char">${char}</span>`;
+                visualContainer.appendChild(charContainer);
+            }
+        }
+
+        function updateBruteforceVisual(password, status) {
+            const visualContainer = document.getElementById('bruteforceVisual');
+            const containers = visualContainer.getElementsByClassName('char-container');
+            
+            for (let i = 0; i < containers.length; i++) {
+                const char = password ? (i < password.length ? password[i] : '*') : '*';
+                containers[i].innerHTML = `<span class="char ${status}-char">${char}</span>`;
+            }
+        }
+
+        function addAttempt(password, status) {
+            if (!investigationActive) {
+                return; // Exit immediately if investigation is not active
+            }
+            
+            const attemptList = document.getElementById('attemptList');
+            const attemptItem = document.createElement('div');
+            attemptItem.className = `attempt-item ${status}`;
+            attemptItem.textContent = `${password} - ${status}`;
+            attemptList.insertBefore(attemptItem, attemptList.firstChild);
+            
+            // Only add terminal output if investigation is still active
+            if (investigationActive) {
+                addTerminalOutput(`[ATTEMPT] Testing: ${password}`);
+            }
+        }
+
+        async function sendControl(action) {
+            try {
+                const response = await fetch('/control', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ action })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                if (!result.success) {
+                    throw new Error(result.error || 'Control action failed');
+                }
+
+                // Stop visual updates when stopping investigation
+                if (action === 'stop') {
+                    // Set investigation state
+                    investigationActive = false;
+                    attemptCounter = 0;
+                    startTime = null;
+
+                    // Clear all visual elements
+                    document.getElementById('bruteforceVisual').innerHTML = '';
+                    document.getElementById('progressBar').style.width = '0%';
+                    document.getElementById('attemptList').innerHTML = '';
+                    
+                    // Stop all animations immediately
+                    document.querySelectorAll('.scrolling-char, .char').forEach(el => {
+                        el.style.animation = 'none';
+                        el.style.opacity = '0';
+                    });
+
+                    // Reset buttons
+                    document.getElementById('simulateBtn').disabled = false;
+                    document.getElementById('crackBtn').disabled = false;
+                    
+                    // Clear terminal and add stop message
+                    addTerminalOutput('Investigation stopped - all processes terminated');
+                    addTerminalOutput('System reset and ready for new investigation');
+                }
+                
+                // Pause visual updates when pausing investigation
+                if (action === 'pause') {
+                    document.querySelectorAll('.scrolling-char, .char').forEach(el => {
+                        el.style.animationPlayState = 'paused';
+                    });
+                    addTerminalOutput('Investigation paused');
+                }
+                
+                // Resume visual updates when resuming investigation
+                if (action === 'resume' && investigationActive) {
+                    document.querySelectorAll('.scrolling-char, .char').forEach(el => {
+                        el.style.animationPlayState = 'running';
+                    });
+                    addTerminalOutput('Investigation resumed');
+                }
+            } catch (error) {
+                addTerminalOutput(`Failed to ${action}: ${error.message}`);
+                // Reset state on error
+                if (action === 'stop') {
+                    investigationActive = false;
+                    attemptCounter = 0;
+                    startTime = null;
+                }
+            }
+        }
+
+        // Update parameter change handlers
+        document.getElementById('minLength').addEventListener('change', function() {
+            if (parseInt(this.value) > parseInt(document.getElementById('maxLength').value)) {
+                document.getElementById('maxLength').value = this.value;
+            }
+            createBruteforceVisual();
+        });
+
+        document.getElementById('maxLength').addEventListener('change', function() {
+            if (parseInt(this.value) < parseInt(document.getElementById('minLength').value)) {
+                document.getElementById('minLength').value = this.value;
+            }
+            createBruteforceVisual();
+        });
+
+        // Add cleanup on page unload
+        window.addEventListener('beforeunload', async () => {
+            if (investigationActive) {
+                try {
+                    await sendControl('stop');
+                } catch (error) {
+                    console.error('Failed to cleanup:', error);
+                }
+            }
+        });
     </script>
 </body>
 </html>
