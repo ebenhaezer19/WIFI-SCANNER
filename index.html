@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WiFi Scanner</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .network {
+            background-color: white;
+            border: 1px solid #ddd;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .network:hover {
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .network.selected {
+            border-color: #007bff;
+            background-color: #e7f1ff;
+        }
+        #password-form {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .error {
+            color: #dc3545;
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f8d7da;
+            border-radius: 4px;
+        }
+        .success {
+            color: #28a745;
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #d4edda;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        input {
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 200px;
+        }
+        .loading {
+            display: none;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>WiFi Scanner</h1>
+    <button onclick="scanNetworks()" id="scanBtn">Scan Networks</button>
+    <div id="loading" class="loading">Scanning...</div>
+    <div id="networks"></div>
+    <div id="password-form" style="display:none;">
+        <h3>Try Password</h3>
+        <input type="text" id="ssid" readonly>
+        <input type="password" id="password" placeholder="Enter password">
+        <button onclick="tryPassword()">Connect</button>
+    </div>
+    <div id="result"></div>
+
+    <script>
+        let selectedNetwork = null;
+
+        async function scanNetworks() {
+            try {
+                document.getElementById('scanBtn').disabled = true;
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('networks').innerHTML = '';
+                document.getElementById('result').innerHTML = '';
+                
+                const response = await fetch('/scan');
+                const data = await response.json();
+                
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('scanBtn').disabled = false;
+                
+                if (!data.success) {
+                    throw new Error(data.error || 'Scan failed');
+                }
+                
+                if (!data.networks || data.networks.length === 0) {
+                    document.getElementById('networks').innerHTML = '<div>No networks found</div>';
+                    return;
+                }
+                
+                document.getElementById('networks').innerHTML = data.networks.map(network => `
+                    <div class="network" onclick="selectNetwork('${network.ssid}')">
+                        <strong>${network.ssid}</strong><br>
+                        Signal Strength: ${network.strength}%<br>
+                        Security: ${network.security}
+                    </div>
+                `).join('');
+            } catch (error) {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('scanBtn').disabled = false;
+                document.getElementById('result').innerHTML = `
+                    <div class="error">Error: ${error.message}</div>
+                `;
+                console.error('Error:', error);
+            }
+        }
+
+        function selectNetwork(ssid) {
+            selectedNetwork = ssid;
+            document.getElementById('ssid').value = ssid;
+            document.getElementById('password-form').style.display = 'block';
+            document.getElementById('result').innerHTML = '';
+            
+            document.querySelectorAll('.network').forEach(el => {
+                if (el.querySelector('strong').textContent === ssid) {
+                    el.classList.add('selected');
+                } else {
+                    el.classList.remove('selected');
+                }
+            });
+        }
+
+        async function tryPassword() {
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                resultDiv.innerHTML = '<div class="loading">Connecting...</div>';
+                
+                const response = await fetch('/try_password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        ssid: selectedNetwork,
+                        password: password
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    resultDiv.innerHTML = `
+                        <div class="success">Connected successfully to ${selectedNetwork}!</div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">Failed to connect: ${result.message || 'Wrong password'}</div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">Error: ${error.message}</div>
+                `;
+                console.error('Error:', error);
+            }
+        }
+
+        // Initial scan
+        scanNetworks();
+    </script>
+</body>
+</html>
