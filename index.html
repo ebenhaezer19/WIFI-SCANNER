@@ -1,44 +1,69 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Law Enforcement WiFi Investigation Tool</title>
+    <title>WIFROG v.1.0.0</title>
+    <link rel="icon" type="image/png" href="logo.png">
     <style>
         body {
             font-family: Arial, sans-serif;
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
-            background-color: #f5f5f5;
+            background-color: #0E1026;
         }
         .header {
-            background-color: #1a237e;
+            background-color: #0E1026;
             color: white;
             padding: 20px;
             border-radius: 5px;
             margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .header img {
+            width: 50px;
+            height: 50px;
+            object-fit: contain;
+        }
+        .header-text {
+            flex: 1;
+        }
+        .header-text h1 {
+            margin: 0;
+            font-size: 2em;
+        }
+        .header-text p {
+            margin: 5px 0 0 0;
+            opacity: 0.8;
         }
         .network {
-            background-color: white;
-            border: 1px solid #ddd;
+            background-color: #161939;
+            border: 1px solid rgba(255,255,255,0.1);
             margin: 10px 0;
             padding: 15px;
             border-radius: 5px;
             cursor: pointer;
             transition: all 0.3s ease;
+            color: white;
         }
         .network:hover {
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            box-shadow: 0 2px 5px rgba(255,255,255,0.1);
+            background-color: #1c2049;
         }
         .network.selected {
-            border-color: #1a237e;
-            background-color: #e8eaf6;
+            border-color: #2196f3;
+            background-color: #1c2049;
         }
         .control-panel {
             margin-top: 20px;
             padding: 20px;
-            background-color: white;
+            background-color: #161939;
             border-radius: 5px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white;
         }
         .button-group {
             display: flex;
@@ -46,47 +71,51 @@
             margin-top: 10px;
         }
         .danger-button {
-            background-color: #d32f2f;
+            background-color: #ff4444;
         }
         .danger-button:hover {
-            background-color: #b71c1c;
+            background-color: #cc0000;
         }
         .warning-button {
-            background-color: #ffa000;
+            background-color: #ffbb33;
         }
         .warning-button:hover {
-            background-color: #ff6f00;
+            background-color: #ff8800;
         }
         .control-button {
-            background-color: #424242;
+            background-color: #2196f3;
         }
         .control-button:hover {
-            background-color: #212121;
+            background-color: #1976d2;
         }
         .results {
             margin-top: 20px;
             padding: 20px;
-            background-color: white;
+            background-color: #161939;
             border-radius: 5px;
             max-height: 400px;
             overflow-y: auto;
+            color: white;
+            border: 1px solid rgba(255,255,255,0.1);
         }
         .error {
-            color: #d32f2f;
-            background-color: #ffebee;
+            color: #ff4444;
+            background-color: rgba(255,68,68,0.1);
             padding: 10px;
             border-radius: 4px;
             margin: 10px 0;
+            border: 1px solid rgba(255,68,68,0.2);
         }
         .success {
-            color: #388e3c;
-            background-color: #e8f5e9;
+            color: #00C851;
+            background-color: rgba(0,200,81,0.1);
             padding: 10px;
             border-radius: 4px;
             margin: 10px 0;
+            border: 1px solid rgba(0,200,81,0.2);
         }
         button {
-            background-color: #1a237e;
+            background-color: #2196f3;
             color: white;
             border: none;
             padding: 10px 20px;
@@ -95,37 +124,46 @@
             transition: background-color 0.3s ease;
         }
         button:hover {
-            background-color: #283593;
+            background-color: #1976d2;
         }
         button:disabled {
-            background-color: #9fa8da;
+            background-color: #64b5f6;
             cursor: not-allowed;
         }
         input, select {
             padding: 8px;
             margin: 5px 0;
-            border: 1px solid #ddd;
+            border: 1px solid rgba(255,255,255,0.1);
             border-radius: 4px;
             width: 200px;
+            background-color: #0E1026;
+            color: white;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #2196f3;
         }
         .progress-container {
             margin-top: 20px;
             padding: 20px;
-            background-color: white;
+            background-color: #161939;
             border-radius: 5px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white;
         }
         .progress-bar {
             width: 100%;
             height: 20px;
-            background-color: #f5f5f5;
+            background-color: #0E1026;
             border-radius: 10px;
             overflow: hidden;
             margin: 10px 0;
+            border: 1px solid rgba(255,255,255,0.1);
         }
         .progress-fill {
             height: 100%;
-            background-color: #1a237e;
+            background-color: #2196f3;
             width: 0%;
             transition: width 0.3s ease;
         }
@@ -133,21 +171,26 @@
             max-height: 200px;
             overflow-y: auto;
             margin-top: 10px;
+            padding: 10px;
+            background-color: #0E1026;
+            border-radius: 5px;
+            border: 1px solid rgba(255,255,255,0.1);
         }
         .attempt-item {
             padding: 5px;
             margin: 2px 0;
             border-radius: 3px;
             animation: fadeIn 0.3s ease;
+            color: white;
         }
         .attempt-item.testing {
-            background-color: #e3f2fd;
+            background-color: rgba(33,150,243,0.1);
         }
         .attempt-item.failed {
-            background-color: #ffebee;
+            background-color: rgba(255,68,68,0.1);
         }
         .attempt-item.success {
-            background-color: #e8f5e9;
+            background-color: rgba(0,200,81,0.1);
         }
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(-10px); }
@@ -282,8 +325,11 @@
 </head>
 <body>
     <div class="header">
-        <h1>WIFROG v.1.0.0</h1>
-        <p>Wifi Crack Attacker</p>
+        <img src="logo.png" alt="WIFROG Logo">
+        <div class="header-text">
+            <h1>WIFROG v.1.0.0</h1>
+            <p>Wifi Crack Attacker</p>
+        </div>
     </div>
 
     <button onclick="scanNetworks()" id="scanBtn">Scan Networks</button>
