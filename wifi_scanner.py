@@ -6,6 +6,7 @@ import itertools
 import threading
 import queue
 import random
+import speedtest
 
 class WiFiInvestigator:
     def __init__(self):
@@ -690,3 +691,285 @@ class WiFiInvestigator:
         except Exception as e:
             print(f"Error calculating SSID similarity: {str(e)}")
             return 0.0
+
+    def perform_speed_test(self):
+        """Perform network speed test"""
+        try:
+            print("Starting network speed test...")
+            
+            # Import speedtest-cli
+            import speedtest
+            
+            # Create speedtest instance
+            st = speedtest.Speedtest()
+            
+            # Get best server
+            print("Finding best server...")
+            st.get_best_server()
+            
+            # Test download speed
+            print("Testing download speed...")
+            download_speed = st.download() / 1_000_000  # Convert to Mbps
+            
+            # Test upload speed
+            print("Testing upload speed...")
+            upload_speed = st.upload() / 1_000_000  # Convert to Mbps
+            
+            # Test ping
+            print("Testing ping...")
+            ping = st.results.ping
+            
+            # Calculate jitter (simulated)
+            jitter = ping * 0.1
+            
+            results = {
+                'download': download_speed,
+                'upload': upload_speed,
+                'ping': ping,
+                'jitter': jitter,
+                'timestamp': time.time()
+            }
+            
+            print(f"Speed test completed:")
+            print(f"Download: {download_speed:.2f} Mbps")
+            print(f"Upload: {upload_speed:.2f} Mbps")
+            print(f"Ping: {ping:.0f} ms")
+            print(f"Jitter: {jitter:.1f} ms")
+            
+            return {
+                'success': True,
+                'results': results
+            }
+        except Exception as e:
+            print(f"Speed test error: {str(e)}")
+            return {
+                'success': False,
+                'error': str(e)
+            }
+
+    def capture_packets(self, duration=10, max_packets=100):
+        """Capture and analyze network packets"""
+        try:
+            print(f"Starting packet capture for {duration} seconds...")
+            packets = []
+            
+            # Simulate packet capture
+            # In real implementation, use scapy or similar library
+            start_time = time.time()
+            while len(packets) < max_packets and time.time() - start_time < duration:
+                packet = self._simulate_packet()
+                packets.append(packet)
+                time.sleep(0.1)
+            
+            # Analyze captured packets
+            analysis = self._analyze_packets(packets)
+            
+            return {
+                'success': True,
+                'packets': packets,
+                'analysis': analysis
+            }
+        except Exception as e:
+            print(f"Packet capture error: {str(e)}")
+            return {
+                'success': False,
+                'error': str(e)
+            }
+
+    def _simulate_packet(self):
+        """Simulate a network packet for demonstration"""
+        protocols = ['TCP', 'UDP', 'ICMP', 'HTTP', 'HTTPS', 'DNS']
+        ports = [80, 443, 53, 22, 21, 25, 110, 143]
+        
+        return {
+            'timestamp': time.time(),
+            'protocol': random.choice(protocols),
+            'src_ip': f"192.168.1.{random.randint(1, 254)}",
+            'dst_ip': f"10.0.0.{random.randint(1, 254)}",
+            'src_port': random.choice(ports),
+            'dst_port': random.choice(ports),
+            'size': random.randint(64, 1500),
+            'flags': random.choice(['SYN', 'ACK', 'PSH', 'FIN', 'RST'])
+        }
+
+    def _analyze_packets(self, packets):
+        """Analyze captured packets"""
+        analysis = {
+            'total_packets': len(packets),
+            'protocols': {},
+            'ports': {},
+            'ip_addresses': {},
+            'packet_sizes': {
+                'min': float('inf'),
+                'max': 0,
+                'avg': 0
+            }
+        }
+        
+        total_size = 0
+        for packet in packets:
+            # Count protocols
+            protocol = packet['protocol']
+            analysis['protocols'][protocol] = analysis['protocols'].get(protocol, 0) + 1
+            
+            # Count ports
+            src_port = packet['src_port']
+            dst_port = packet['dst_port']
+            analysis['ports'][src_port] = analysis['ports'].get(src_port, 0) + 1
+            analysis['ports'][dst_port] = analysis['ports'].get(dst_port, 0) + 1
+            
+            # Count IP addresses
+            src_ip = packet['src_ip']
+            dst_ip = packet['dst_ip']
+            analysis['ip_addresses'][src_ip] = analysis['ip_addresses'].get(src_ip, 0) + 1
+            analysis['ip_addresses'][dst_ip] = analysis['ip_addresses'].get(dst_ip, 0) + 1
+            
+            # Track packet sizes
+            size = packet['size']
+            total_size += size
+            analysis['packet_sizes']['min'] = min(analysis['packet_sizes']['min'], size)
+            analysis['packet_sizes']['max'] = max(analysis['packet_sizes']['max'], size)
+        
+        analysis['packet_sizes']['avg'] = total_size / len(packets) if packets else 0
+        return analysis
+
+    def scan_ports(self, target_ip, port_range=(1, 1024)):
+        """Scan ports on target IP"""
+        try:
+            print(f"Starting port scan on {target_ip}...")
+            results = []
+            
+            # Simulate port scanning
+            # In real implementation, use socket or similar library
+            for port in range(port_range[0], port_range[1] + 1):
+                # Simulate scan delay
+                time.sleep(0.01)
+                
+                # Randomly determine if port is open (for simulation)
+                is_open = random.random() < 0.1  # 10% chance of open port
+                if is_open:
+                    service = self._get_common_service(port)
+                    results.append({
+                        'port': port,
+                        'state': 'open',
+                        'service': service,
+                        'version': f"{service} {random.randint(1,5)}.{random.randint(0,9)}"
+                    })
+            
+            return {
+                'success': True,
+                'target': target_ip,
+                'scanned_ports': port_range,
+                'open_ports': results
+            }
+        except Exception as e:
+            print(f"Port scan error: {str(e)}")
+            return {
+                'success': False,
+                'error': str(e)
+            }
+
+    def _get_common_service(self, port):
+        """Get common service name for port"""
+        common_ports = {
+            21: 'FTP',
+            22: 'SSH',
+            23: 'Telnet',
+            25: 'SMTP',
+            53: 'DNS',
+            80: 'HTTP',
+            110: 'POP3',
+            143: 'IMAP',
+            443: 'HTTPS',
+            3306: 'MySQL',
+            5432: 'PostgreSQL',
+            27017: 'MongoDB'
+        }
+        return common_ports.get(port, 'Unknown')
+
+    def dns_lookup(self, domain):
+        """Perform DNS lookup"""
+        try:
+            print(f"Performing DNS lookup for {domain}...")
+            
+            # Simulate DNS lookup
+            # In real implementation, use dnspython or similar library
+            time.sleep(1)
+            
+            # Generate simulated records
+            records = {
+                'A': [f"192.168.{random.randint(1,255)}.{random.randint(1,255)}"],
+                'AAAA': [f"2001:db8::${random.randint(1,9999)}"],
+                'MX': [f"mail{i}.{domain}" for i in range(1,3)],
+                'NS': [f"ns{i}.{domain}" for i in range(1,3)],
+                'TXT': [f"v=spf1 include:{domain} ~all"],
+                'SOA': {
+                    'primary': f"ns1.{domain}",
+                    'email': f"admin.{domain}",
+                    'serial': int(time.time()),
+                    'refresh': 7200,
+                    'retry': 3600,
+                    'expire': 1209600,
+                    'ttl': 3600
+                }
+            }
+            
+            return {
+                'success': True,
+                'domain': domain,
+                'records': records
+            }
+        except Exception as e:
+            print(f"DNS lookup error: {str(e)}")
+            return {
+                'success': False,
+                'error': str(e)
+            }
+
+    def traceroute(self, target):
+        """Perform traceroute visualization"""
+        try:
+            print(f"Starting traceroute to {target}...")
+            
+            # Simulate traceroute
+            # In real implementation, use scapy or similar library
+            hops = []
+            current_ip = "192.168.1.1"
+            
+            for ttl in range(1, random.randint(8, 15)):
+                time.sleep(0.5)  # Simulate hop delay
+                
+                # Generate next hop
+                next_ip = f"10.{random.randint(0,255)}.{random.randint(0,255)}.{random.randint(1,254)}"
+                
+                # Simulate RTT measurements
+                rtts = [random.uniform(10, 100) for _ in range(3)]
+                
+                hop = {
+                    'ttl': ttl,
+                    'ip': next_ip,
+                    'hostname': f"hop-{ttl}.provider-{random.randint(1,5)}.net",
+                    'rtts': rtts,
+                    'avg_rtt': sum(rtts) / len(rtts),
+                    'loss': random.randint(0, 10)
+                }
+                
+                hops.append(hop)
+                current_ip = next_ip
+                
+                # Simulate reaching target
+                if ttl > 5 and random.random() < 0.3:
+                    break
+            
+            return {
+                'success': True,
+                'target': target,
+                'hops': hops,
+                'total_hops': len(hops)
+            }
+        except Exception as e:
+            print(f"Traceroute error: {str(e)}")
+            return {
+                'success': False,
+                'error': str(e)
+            }

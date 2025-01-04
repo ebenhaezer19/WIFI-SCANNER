@@ -614,6 +614,149 @@
                 min-width: 120px;
             }
         }
+
+        /* Network Analysis Styles */
+        .network-analysis {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #161939;
+            border-radius: 5px;
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white;
+        }
+
+        .speed-gauge {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .speed-value {
+            font-size: 2em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .speed-unit {
+            opacity: 0.7;
+        }
+
+        .packet-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .stat-box {
+            background: rgba(255,255,255,0.05);
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .packet-list, .port-list {
+            background: rgba(0,0,0,0.2);
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .dns-records {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .record-section {
+            background: rgba(255,255,255,0.05);
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .trace-visualization {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 5px;
+            min-height: 200px;
+        }
+
+        /* Input and Button Styles */
+        .analysis-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 5px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .analysis-section h4 {
+            margin-top: 0;
+            color: #2196f3;
+        }
+
+        .capture-controls, .scan-controls, .dns-controls, .trace-controls {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+            flex-wrap: wrap;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .speed-gauge {
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            .packet-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .capture-controls, .scan-controls, .dns-controls, .trace-controls {
+                flex-direction: column;
+            }
+        }
+
+        .speed-value, .speed-unit,
+        .packet-stats .stat-content,
+        .packet-list .list-content,
+        .port-list .list-content,
+        .dns-records .record-content,
+        .trace-visualization {
+            color: white;
+        }
+
+        .packet-item, .port-item, .hop-item {
+            color: white;
+            margin: 5px 0;
+            padding: 5px;
+            border-radius: 3px;
+            background: rgba(255,255,255,0.05);
+        }
+
+        .hop-item span {
+            margin-right: 10px;
+            color: white;
+        }
+
+        .stat-box h5 {
+            color: #2196f3;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+
+        .record-section h5 {
+            color: #2196f3;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
@@ -756,6 +899,123 @@
                     <span class="detail-label">Indicators:</span>
                     <ul class="indicators-list"></ul>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="network-analysis" style="display: none;">
+        <h3>Network Analysis Tools</h3>
+        
+        <!-- Speed Test Section -->
+        <div class="analysis-section">
+            <h4>Network Speed Test</h4>
+            <button onclick="performSpeedTest()" id="speedTestBtn">Start Speed Test</button>
+            <div id="speedTestResults" style="display: none;">
+                <div class="speed-gauge">
+                    <div class="download-speed">
+                        <h5>Download</h5>
+                        <div class="speed-value"></div>
+                        <div class="speed-unit">Mbps</div>
+                    </div>
+                    <div class="upload-speed">
+                        <h5>Upload</h5>
+                        <div class="speed-value"></div>
+                        <div class="speed-unit">Mbps</div>
+                    </div>
+                    <div class="latency">
+                        <h5>Ping</h5>
+                        <div class="speed-value"></div>
+                        <div class="speed-unit">ms</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Packet Capture Section -->
+        <div class="analysis-section">
+            <h4>Packet Capture & Analysis</h4>
+            <div class="capture-controls">
+                <input type="number" id="captureDuration" value="10" min="1" max="60" placeholder="Duration (seconds)">
+                <input type="number" id="maxPackets" value="100" min="10" max="1000" placeholder="Max Packets">
+                <button onclick="startPacketCapture()" id="captureBtn">Start Capture</button>
+            </div>
+            <div id="captureResults" style="display: none;">
+                <div class="packet-stats">
+                    <div class="stat-box protocols">
+                        <h5>Protocols</h5>
+                        <div class="stat-content"></div>
+                    </div>
+                    <div class="stat-box ports">
+                        <h5>Active Ports</h5>
+                        <div class="stat-content"></div>
+                    </div>
+                    <div class="stat-box packet-sizes">
+                        <h5>Packet Sizes</h5>
+                        <div class="stat-content"></div>
+                    </div>
+                </div>
+                <div class="packet-list">
+                    <h5>Captured Packets</h5>
+                    <div class="list-content"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Port Scanner Section -->
+        <div class="analysis-section">
+            <h4>Port Scanner</h4>
+            <div class="scan-controls">
+                <input type="text" id="targetIP" placeholder="Target IP">
+                <input type="number" id="startPort" value="1" min="1" max="65535" placeholder="Start Port">
+                <input type="number" id="endPort" value="1024" min="1" max="65535" placeholder="End Port">
+                <button onclick="startPortScan()" id="scanBtn">Start Scan</button>
+            </div>
+            <div id="portScanResults" style="display: none;">
+                <div class="port-list">
+                    <h5>Open Ports</h5>
+                    <div class="list-content"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DNS Lookup Section -->
+        <div class="analysis-section">
+            <h4>DNS Lookup</h4>
+            <div class="dns-controls">
+                <input type="text" id="domainName" placeholder="Domain Name">
+                <button onclick="performDNSLookup()" id="dnsBtn">Lookup</button>
+            </div>
+            <div id="dnsResults" style="display: none;">
+                <div class="dns-records">
+                    <div class="record-section a-records">
+                        <h5>A Records</h5>
+                        <div class="record-content"></div>
+                    </div>
+                    <div class="record-section mx-records">
+                        <h5>MX Records</h5>
+                        <div class="record-content"></div>
+                    </div>
+                    <div class="record-section ns-records">
+                        <h5>NS Records</h5>
+                        <div class="record-content"></div>
+                    </div>
+                    <div class="record-section txt-records">
+                        <h5>TXT Records</h5>
+                        <div class="record-content"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Traceroute Section -->
+        <div class="analysis-section">
+            <h4>Traceroute Visualization</h4>
+            <div class="trace-controls">
+                <input type="text" id="traceTarget" placeholder="Target Host/IP">
+                <button onclick="startTraceroute()" id="traceBtn">Start Trace</button>
+            </div>
+            <div id="traceResults" style="display: none;">
+                <div class="trace-visualization"></div>
             </div>
         </div>
     </div>
@@ -1439,6 +1699,254 @@
                 rogueInfo.indicators.forEach(indicator => {
                     indicatorsList.innerHTML += `<li>${indicator}</li>`;
                 });
+            }
+        }
+
+        // Network Analysis Functions
+        async function performSpeedTest() {
+            try {
+                const btn = document.getElementById('speedTestBtn');
+                btn.disabled = true;
+                btn.textContent = 'Testing...';
+                
+                const response = await fetch('/speedtest', { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.success) {
+                    const results = data.results;
+                    document.getElementById('speedTestResults').style.display = 'block';
+                    
+                    // Update speed values
+                    document.querySelector('.download-speed .speed-value').textContent = 
+                        results.download.toFixed(2);
+                    document.querySelector('.upload-speed .speed-value').textContent = 
+                        results.upload.toFixed(2);
+                    document.querySelector('.latency .speed-value').textContent = 
+                        results.ping.toFixed(0);
+                } else {
+                    showError(data.error || 'Speed test failed');
+                }
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                const btn = document.getElementById('speedTestBtn');
+                btn.disabled = false;
+                btn.textContent = 'Start Speed Test';
+            }
+        }
+
+        async function startPacketCapture() {
+            try {
+                const btn = document.getElementById('captureBtn');
+                btn.disabled = true;
+                btn.textContent = 'Capturing...';
+                
+                const duration = parseInt(document.getElementById('captureDuration').value);
+                const maxPackets = parseInt(document.getElementById('maxPackets').value);
+                
+                const response = await fetch('/capture', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ duration, max_packets: maxPackets })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('captureResults').style.display = 'block';
+                    
+                    // Update protocol stats
+                    const protocolsContent = Object.entries(data.analysis.protocols)
+                        .map(([protocol, count]) => `${protocol}: ${count}`)
+                        .join('<br>');
+                    document.querySelector('.protocols .stat-content').innerHTML = protocolsContent;
+                    
+                    // Update ports stats
+                    const portsContent = Object.entries(data.analysis.ports)
+                        .map(([port, count]) => `Port ${port}: ${count}`)
+                        .join('<br>');
+                    document.querySelector('.ports .stat-content').innerHTML = portsContent;
+                    
+                    // Update packet sizes
+                    const sizesContent = `
+                        Min: ${data.analysis.packet_sizes.min} bytes<br>
+                        Max: ${data.analysis.packet_sizes.max} bytes<br>
+                        Avg: ${data.analysis.packet_sizes.avg.toFixed(2)} bytes
+                    `;
+                    document.querySelector('.packet-sizes .stat-content').innerHTML = sizesContent;
+                    
+                    // Update packet list
+                    const packetListContent = data.packets
+                        .map(packet => `
+                            <div class="packet-item">
+                                ${packet.protocol} | ${packet.src_ip}:${packet.src_port} → 
+                                ${packet.dst_ip}:${packet.dst_port} | ${packet.size} bytes
+                            </div>
+                        `)
+                        .join('');
+                    document.querySelector('.packet-list .list-content').innerHTML = packetListContent;
+                } else {
+                    showError(data.error || 'Packet capture failed');
+                }
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                const btn = document.getElementById('captureBtn');
+                btn.disabled = false;
+                btn.textContent = 'Start Capture';
+            }
+        }
+
+        async function startPortScan() {
+            try {
+                const btn = document.getElementById('scanBtn');
+                btn.disabled = true;
+                btn.textContent = 'Scanning...';
+                
+                const targetIP = document.getElementById('targetIP').value;
+                const startPort = parseInt(document.getElementById('startPort').value);
+                const endPort = parseInt(document.getElementById('endPort').value);
+                
+                const response = await fetch('/portscan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        target_ip: targetIP,
+                        start_port: startPort,
+                        end_port: endPort
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('portScanResults').style.display = 'block';
+                    
+                    const portListContent = data.open_ports
+                        .map(port => `
+                            <div class="port-item">
+                                Port ${port.port} (${port.service}) - ${port.version}
+                            </div>
+                        `)
+                        .join('');
+                    document.querySelector('.port-list .list-content').innerHTML = portListContent;
+                } else {
+                    showError(data.error || 'Port scan failed');
+                }
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                const btn = document.getElementById('scanBtn');
+                btn.disabled = false;
+                btn.textContent = 'Start Scan';
+            }
+        }
+
+        async function performDNSLookup() {
+            try {
+                const btn = document.getElementById('dnsBtn');
+                btn.disabled = true;
+                btn.textContent = 'Looking up...';
+                
+                const domain = document.getElementById('domainName').value;
+                
+                const response = await fetch('/dns', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ domain })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('dnsResults').style.display = 'block';
+                    
+                    // Update A records
+                    document.querySelector('.a-records .record-content').innerHTML = 
+                        data.records.A.join('<br>');
+                    
+                    // Update MX records
+                    document.querySelector('.mx-records .record-content').innerHTML = 
+                        data.records.MX.join('<br>');
+                    
+                    // Update NS records
+                    document.querySelector('.ns-records .record-content').innerHTML = 
+                        data.records.NS.join('<br>');
+                    
+                    // Update TXT records
+                    document.querySelector('.txt-records .record-content').innerHTML = 
+                        data.records.TXT.join('<br>');
+                } else {
+                    showError(data.error || 'DNS lookup failed');
+                }
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                const btn = document.getElementById('dnsBtn');
+                btn.disabled = false;
+                btn.textContent = 'Lookup';
+            }
+        }
+
+        async function startTraceroute() {
+            try {
+                const btn = document.getElementById('traceBtn');
+                btn.disabled = true;
+                btn.textContent = 'Tracing...';
+                
+                const target = document.getElementById('traceTarget').value;
+                
+                const response = await fetch('/traceroute', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ target })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('traceResults').style.display = 'block';
+                    
+                    const visualization = data.hops
+                        .map(hop => `
+                            <div class="hop-item">
+                                <span class="hop-ttl">${hop.ttl}</span>
+                                <span class="hop-ip">${hop.ip}</span>
+                                <span class="hop-hostname">${hop.hostname}</span>
+                                <span class="hop-rtt">${hop.avg_rtt.toFixed(2)} ms</span>
+                                <span class="hop-loss">${hop.loss}% loss</span>
+                            </div>
+                        `)
+                        .join('');
+                    
+                    document.querySelector('.trace-visualization').innerHTML = visualization;
+                } else {
+                    showError(data.error || 'Traceroute failed');
+                }
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                const btn = document.getElementById('traceBtn');
+                btn.disabled = false;
+                btn.textContent = 'Start Trace';
+            }
+        }
+
+        // Add button to show network analysis tools
+        document.querySelector('.header').insertAdjacentHTML('afterend', `
+            <button onclick="toggleNetworkAnalysis()" id="networkAnalysisBtn" class="control-button">
+                Network Analysis Tools
+            </button>
+        `);
+
+        function toggleNetworkAnalysis() {
+            const analysisSection = document.querySelector('.network-analysis');
+            if (analysisSection.style.display === 'none') {
+                analysisSection.style.display = 'block';
+                document.getElementById('networkAnalysisBtn').textContent = 'Hide Network Analysis';
+            } else {
+                analysisSection.style.display = 'none';
+                document.getElementById('networkAnalysisBtn').textContent = 'Network Analysis Tools';
             }
         }
     </script>

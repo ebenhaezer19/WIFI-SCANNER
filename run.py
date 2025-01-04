@@ -141,6 +141,104 @@ class InvestigatorHandler(BaseHTTPRequestHandler):
                     'success': False,
                     'error': str(e)
                 }, 500)
+        elif self.path == '/speedtest':
+            try:
+                result = self.investigator.perform_speed_test()
+                self.send_json_response(result)
+            except Exception as e:
+                print(f"Speed test error: {str(e)}")
+                self.send_json_response({
+                    'success': False,
+                    'error': str(e)
+                }, 500)
+        elif self.path == '/capture':
+            try:
+                content_length = int(self.headers.get('Content-Length', 0))
+                post_data = self.rfile.read(content_length)
+                data = json.loads(post_data.decode('utf-8'))
+                
+                duration = int(data.get('duration', 10))
+                max_packets = int(data.get('max_packets', 100))
+                
+                result = self.investigator.capture_packets(duration, max_packets)
+                self.send_json_response(result)
+            except Exception as e:
+                print(f"Packet capture error: {str(e)}")
+                self.send_json_response({
+                    'success': False,
+                    'error': str(e)
+                }, 500)
+        elif self.path == '/portscan':
+            try:
+                content_length = int(self.headers.get('Content-Length', 0))
+                post_data = self.rfile.read(content_length)
+                data = json.loads(post_data.decode('utf-8'))
+                
+                target_ip = data.get('target_ip')
+                port_range = (
+                    int(data.get('start_port', 1)),
+                    int(data.get('end_port', 1024))
+                )
+                
+                if not target_ip:
+                    self.send_json_response({
+                        'success': False,
+                        'error': 'Target IP is required'
+                    }, 400)
+                    return
+                
+                result = self.investigator.scan_ports(target_ip, port_range)
+                self.send_json_response(result)
+            except Exception as e:
+                print(f"Port scan error: {str(e)}")
+                self.send_json_response({
+                    'success': False,
+                    'error': str(e)
+                }, 500)
+        elif self.path == '/dns':
+            try:
+                content_length = int(self.headers.get('Content-Length', 0))
+                post_data = self.rfile.read(content_length)
+                data = json.loads(post_data.decode('utf-8'))
+                
+                domain = data.get('domain')
+                if not domain:
+                    self.send_json_response({
+                        'success': False,
+                        'error': 'Domain is required'
+                    }, 400)
+                    return
+                
+                result = self.investigator.dns_lookup(domain)
+                self.send_json_response(result)
+            except Exception as e:
+                print(f"DNS lookup error: {str(e)}")
+                self.send_json_response({
+                    'success': False,
+                    'error': str(e)
+                }, 500)
+        elif self.path == '/traceroute':
+            try:
+                content_length = int(self.headers.get('Content-Length', 0))
+                post_data = self.rfile.read(content_length)
+                data = json.loads(post_data.decode('utf-8'))
+                
+                target = data.get('target')
+                if not target:
+                    self.send_json_response({
+                        'success': False,
+                        'error': 'Target is required'
+                    }, 400)
+                    return
+                
+                result = self.investigator.traceroute(target)
+                self.send_json_response(result)
+            except Exception as e:
+                print(f"Traceroute error: {str(e)}")
+                self.send_json_response({
+                    'success': False,
+                    'error': str(e)
+                }, 500)
         else:
             self.send_json_response({
                 'success': False,
