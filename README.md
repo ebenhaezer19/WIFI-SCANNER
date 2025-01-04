@@ -8,7 +8,7 @@
 
 **Description:**
 
-WIFROG (Wi-Fi Recovery and Optimization Gadget) is a powerful and educational tool designed for ethical hacking enthusiasts and cybersecurity professionals. This program employs brute force techniques to test the security of Wi-Fi networks by attempting to recover passwords through systematic guessing. 
+WIFROG is a powerful and educational tool designed for ethical hacking enthusiasts and cybersecurity professionals. This program employs brute force techniques to test the security of Wi-Fi networks by attempting to recover passwords through systematic guessing. 
 
 **Key Features:**
 
